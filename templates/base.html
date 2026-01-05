@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度Flag管理工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">🎯 年度Flag管理工具</a>
+            <ul class="nav-menu">
+                <li><a href="/">首页</a></li>
+                <li><a href="/flags">Flag列表</a></li>
+                <li><a href="/add">添加Flag</a></li>
+                <li><a href="/reminders">提醒</a></li>
+                <li><a href="/statistics">统计</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 年度Flag管理工具 | 祝你新年快乐，flag都能实现！</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

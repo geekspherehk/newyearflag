@@ -1,0 +1,15 @@
+{
+  "appId": "com.newyearflag.app",
+  "appName": "年度Flag管理",
+  "webDir": "www",
+  "server": {
+    "url": "http://127.0.0.1:5000",
+    "cleartext": true
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "",
+      "keystoreAlias": ""
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h1>🎯 欢迎使用年度Flag管理工具</h1>
+    <p class="subtitle">管理你的新年目标，实现你的梦想</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">总Flag数</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">已完成</div>
+    </div>
+    <div class="stat-card in-progress">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-value">{{ stats.in_progress }}</div>
+        <div class="stat-label">进行中</div>
+    </div>
+    <div class="stat-card not-started">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ stats.not_started }}</div>
+        <div class="stat-label">未开始</div>
+    </div>
+</div>
+
+<div class="progress-section">
+    <h2>📈 完成率</h2>
+    <div class="progress-bar-container">
+        <div class="progress-bar" style="width: {{ stats.completion_rate }}%">
+            <span class="progress-text">{{ "%.1f"|format(stats.completion_rate) }}%</span>
+        </div>
+    </div>
+</div>
+
+<div class="info-grid">
+    <div class="info-card">
+        <h3>🎯 平均可行性评分</h3>
+        <p class="info-value">{{ "%.1f"|format(stats.avg_feasibility) }}/100</p>
+    </div>
+    <div class="info-card">
+        <h3>🔔 待检查Flag</h3>
+        <p class="info-value">{{ reminder_count }} 个</p>
+        {% if reminder_count > 0 %}
+        <a href="/reminders" class="btn btn-warning">查看提醒</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="quick-actions">
+    <h2>🚀 快速操作</h2>
+    <div class="action-buttons">
+        <a href="/add" class="btn btn-primary">添加新Flag</a>
+        <a href="/flags" class="btn btn-secondary">查看所有Flag</a>
+        <a href="/reminders" class="btn btn-warning">查看提醒</a>
+        <a href="/statistics" class="btn btn-info">查看统计</a>
+    </div>
+</div>
+
+<div class="recent-flags">
+    <h2>📋 最近添加的Flag</h2>
+    <div class="flag-list">
+        {% for flag in flags[:5] %}
+        <div class="flag-card">
+            <div class="flag-header">
+                <h3>{{ flag.title }}</h3>
+                <span class="flag-status status-{{ flag.status }}">{{ flag.status }}</span>
+            </div>
+            <p class="flag-description">{{ flag.description[:100] }}...</p>
+            <div class="flag-meta">
+                <span>📅 {{ flag.target_date }}</span>
+                <span>📊 {{ flag.progress }}%</span>
+                <span>🎯 {{ flag.feasibility_score }}/100</span>
+            </div>
+            <a href="/flag/{{ flag.id }}" class="btn btn-sm btn-outline">查看详情</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

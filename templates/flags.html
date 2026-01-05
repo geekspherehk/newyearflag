@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📋 Flag列表</h1>
+    <a href="/add" class="btn btn-primary">添加新Flag</a>
+</div>
+
+<div class="filters">
+    <div class="filter-group">
+        <label>状态筛选：</label>
+        <select id="statusFilter" onchange="filterFlags()">
+            <option value="">全部</option>
+            <option value="未开始" {% if current_status == '未开始' %}selected{% endif %}>未开始</option>
+            <option value="进行中" {% if current_status == '进行中' %}selected{% endif %}>进行中</option>
+            <option value="已完成" {% if current_status == '已完成' %}selected{% endif %}>已完成</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>分类筛选：</label>
+        <select id="categoryFilter" onchange="filterFlags()">
+            <option value="">全部</option>
+            {% for category in categories %}
+            <option value="{{ category }}" {% if current_category == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索Flag..." onkeyup="searchFlags()">
+</div>
+
+<div class="flag-grid">
+    {% for flag in flags %}
+    <div class="flag-card" data-status="{{ flag.status }}" data-category="{{ flag.category }}">
+        <div class="flag-header">
+            <h3>{{ flag.title }}</h3>
+            <span class="flag-status status-{{ flag.status }}">{{ flag.status }}</span>
+        </div>
+        <p class="flag-description">{{ flag.description }}</p>
+        
+        <div class="flag-progress">
+            <div class="progress-bar-container small">
+                <div class="progress-bar" style="width: {{ flag.progress }}%">
+                    <span class="progress-text">{{ flag.progress }}%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flag-meta">
+            <span>📅 {{ flag.target_date }}</span>
+            <span>🏷️ {{ flag.category }}</span>
+            <span>🎯 {{ flag.feasibility_score }}/100</span>
+        </div>
+        
+        <div class="flag-actions">
+            <a href="/flag/{{ flag.id }}" class="btn btn-sm btn-outline">查看详情</a>
+            <button onclick="showUpdateModal('{{ flag.id }}', {{ flag.progress }})" class="btn btn-sm btn-secondary">更新进度</button>
+            <button onclick="deleteFlag('{{ flag.id }}')" class="btn btn-sm btn-danger">删除</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal" id="updateModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeUpdateModal()">&times;</span>
+        <h2>更新进度</h2>
+        <form id="updateForm" onsubmit="submitUpdate(event)">
+            <input type="hidden" id="updateFlagId">
+            <div class="form-group">
+                <label>进度 (0-100):</label>
+                <input type="range" id="updateProgress" min="0" max="100" value="0" oninput="updateProgressLabel()">
+                <span id="progressLabel">0%</span>
+            </div>
+            <div class="form-group">
+                <label>备注:</label>
+                <textarea id="updateNotes" rows="3" placeholder="输入备注信息..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">更新</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterFlags() {
+    const status = document.getElementById('statusFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+    
+    let url = '/flags';
+    const params = [];
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (category) params.push(`category=${encodeURIComponent(category)}`);
+    if (params.length > 0) url += '?' + params.join('&');
+    
+    window.location.href = url;
+}
+
+function searchFlags() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.flag-card');
+    
+    cards.forEach(card => {
+        const title = card.querySelector('h3').textContent.toLowerCase();
+        const description = card.querySelector('.flag-description').textContent.toLowerCase();
+        const category = card.querySelector('.flag-meta span:nth-child(2)').textContent.toLowerCase();
+        
+        if (title.includes(query) || description.includes(query) || category.includes(query)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function showUpdateModal(flagId, currentProgress) {
+    document.getElementById('updateFlagId').value = flagId;
+    document.getElementById('updateProgress').value = currentProgress;
+    document.getElementById('progressLabel').textContent = currentProgress + '%';
+    document.getElementById('updateModal').style.display = 'block';
+}
+
+function closeUpdateModal() {
+    document.getElementById('updateModal').style.display = 'none';
+}
+
+function updateProgressLabel() {
+    const progress = document.getElementById('updateProgress').value;
+    document.getElementById('progressLabel').textContent = progress + '%';
+}
+
+function submitUpdate(event) {
+    event.preventDefault();
+    
+    const flagId = document.getElementById('updateFlagId').value;
+    const progress = document.getElementById('updateProgress').value;
+    const notes = document.getElementById('updateNotes').value;
+    
+    fetch(`/update/${flagId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `progress=${progress}&notes=${encodeURIComponent(notes)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('进度更新成功！');
+            closeUpdateModal();
+            location.reload();
+        } else {
+            alert('更新失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('更新失败：' + error);
+    });
+}
+
+function deleteFlag(flagId) {
+    if (confirm('确定要删除这个Flag吗？')) {
+        fetch(`/delete/${flagId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('删除成功！');
+                location.reload();
+            } else {
+                alert('删除失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('删除失败：' + error);
+        });
+    }
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('updateModal');
+    if (event.target == modal) {
+        closeUpdateModal();
+    }
+}
+</script>
+{% endblock %}

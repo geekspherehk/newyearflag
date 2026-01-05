@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>➕ 添加新Flag</h1>
+    <a href="/flags" class="btn btn-secondary">返回列表</a>
+</div>
+
+<div class="form-container">
+    <form id="addFlagForm" onsubmit="submitFlag(event)">
+        <div class="form-group">
+            <label for="title">标题 *</label>
+            <input type="text" id="title" name="title" required placeholder="输入Flag标题">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">描述 *</label>
+            <textarea id="description" name="description" rows="5" required 
+                      placeholder="详细描述你的目标，包括具体的行动计划和量化指标"></textarea>
+            <small class="help-text">💡 提示：描述越具体，可行性评分越高</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="target_date">目标日期 *</label>
+            <input type="date" id="target_date" name="target_date" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="category">分类</label>
+            <input type="text" id="category" name="category" value="其他" 
+                   placeholder="例如：学习成长、健康生活、职业发展">
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">添加Flag</button>
+            <button type="reset" class="btn btn-secondary">重置</button>
+        </div>
+    </form>
+</div>
+
+<div class="tips-section">
+    <h2>💡 提高可行性评分的技巧</h2>
+    <div class="tips-grid">
+        <div class="tip-card">
+            <h3>📅 合理的时间规划</h3>
+            <p>目标时间不宜过短（少于30天）或过长（超过1年），建议3-6个月为宜</p>
+        </div>
+        <div class="tip-card">
+            <h3>📝 具体的描述</h3>
+            <p>详细描述你的行动计划，包括具体的步骤和方法</p>
+        </div>
+        <div class="tip-card">
+            <h3>📊 量化指标</h3>
+            <p>包含可量化的目标，如"每天学习1小时"、"每周运动3次"等</p>
+        </div>
+        <div class="tip-card">
+            <h3>🎯 明确的目标</h3>
+            <p>标题要清晰明确，让人一眼就能理解你的目标</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitFlag(event) {
+    event.preventDefault();
+    
+    const title = document.getElementById('title').value;
+    const description = document.getElementById('description').value;
+    const targetDate = document.getElementById('target_date').value;
+    const category = document.getElementById('category').value;
+    
+    fetch('/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&target_date=${targetDate}&category=${encodeURIComponent(category)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Flag添加成功！');
+            window.location.href = '/flags';
+        } else {
+            alert('添加失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('添加失败：' + error);
+    });
+}
+</script>
+{% endblock %}

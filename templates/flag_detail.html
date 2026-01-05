@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📋 Flag详情</h1>
+    <a href="/flags" class="btn btn-secondary">返回列表</a>
+</div>
+
+<div class="flag-detail">
+    <div class="detail-header">
+        <h2>{{ flag.title }}</h2>
+        <span class="flag-status status-{{ flag.status }}">{{ flag.status }}</span>
+    </div>
+    
+    <div class="detail-section">
+        <h3>📋 描述</h3>
+        <p>{{ flag.description }}</p>
+    </div>
+    
+    <div class="detail-grid">
+        <div class="detail-item">
+            <h4>📅 目标日期</h4>
+            <p>{{ flag.target_date }}</p>
+        </div>
+        <div class="detail-item">
+            <h4>📊 当前进度</h4>
+            <p>{{ flag.progress }}%</p>
+        </div>
+        <div class="detail-item">
+            <h4>🏷️ 分类</h4>
+            <p>{{ flag.category }}</p>
+        </div>
+        <div class="detail-item">
+            <h4>📅 创建时间</h4>
+            <p>{{ flag.created_date }}</p>
+        </div>
+    </div>
+    
+    <div class="detail-section">
+        <h3>📈 进度</h3>
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ flag.progress }}%">
+                <span class="progress-text">{{ flag.progress }}%</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="detail-section">
+        <h3>🎯 可行性分析</h3>
+        <div class="feasibility-card">
+            <div class="feasibility-score">
+                <span class="score-value">{{ flag.feasibility_score }}</span>
+                <span class="score-total">/100</span>
+            </div>
+            <div class="feasibility-analysis">
+                <p>{{ flag.feasibility_reason }}</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if flag.check_history %}
+    <div class="detail-section">
+        <h3>📊 检查历史</h3>
+        <div class="history-list">
+            {% for record in flag.check_history %}
+            <div class="history-item">
+                <div class="history-date">{{ record.date }}</div>
+                <div class="history-progress">进度: {{ record.progress }}%</div>
+                {% if record.notes %}
+                <div class="history-notes">{{ record.notes }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="detail-actions">
+        <button onclick="showUpdateModal('{{ flag.id }}', {{ flag.progress }})" class="btn btn-primary">更新进度</button>
+        <button onclick="deleteFlag('{{ flag.id }}')" class="btn btn-danger">删除Flag</button>
+    </div>
+</div>
+
+<div class="modal" id="updateModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeUpdateModal()">&times;</span>
+        <h2>更新进度</h2>
+        <form id="updateForm" onsubmit="submitUpdate(event)">
+            <input type="hidden" id="updateFlagId">
+            <div class="form-group">
+                <label>进度 (0-100):</label>
+                <input type="range" id="updateProgress" min="0" max="100" value="0" oninput="updateProgressLabel()">
+                <span id="progressLabel">0%</span>
+            </div>
+            <div class="form-group">
+                <label>备注:</label>
+                <textarea id="updateNotes" rows="3" placeholder="输入备注信息..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">更新</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showUpdateModal(flagId, currentProgress) {
+    document.getElementById('updateFlagId').value = flagId;
+    document.getElementById('updateProgress').value = currentProgress;
+    document.getElementById('progressLabel').textContent = currentProgress + '%';
+    document.getElementById('updateModal').style.display = 'block';
+}
+
+function closeUpdateModal() {
+    document.getElementById('updateModal').style.display = 'none';
+}
+
+function updateProgressLabel() {
+    const progress = document.getElementById('updateProgress').value;
+    document.getElementById('progressLabel').textContent = progress + '%';
+}
+
+function submitUpdate(event) {
+    event.preventDefault();
+    
+    const flagId = document.getElementById('updateFlagId').value;
+    const progress = document.getElementById('updateProgress').value;
+    const notes = document.getElementById('updateNotes').value;
+    
+    fetch(`/update/${flagId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `progress=${progress}&notes=${encodeURIComponent(notes)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('进度更新成功！');
+            closeUpdateModal();
+            location.reload();
+        } else {
+            alert('更新失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('更新失败：' + error);
+    });
+}
+
+function deleteFlag(flagId) {
+    if (confirm('确定要删除这个Flag吗？')) {
+        fetch(`/delete/${flagId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('删除成功！');
+                window.location.href = '/flags';
+            } else {
+                alert('删除失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('删除失败：' + error);
+        });
+    }
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('updateModal');
+    if (event.target == modal) {
+        closeUpdateModal();
+    }
+}
+</script>
+{% endblock %}

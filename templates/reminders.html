@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔔 月度提醒</h1>
+    <a href="/" class="btn btn-secondary">返回首页</a>
+</div>
+
+{% if reminders %}
+<div class="alert alert-warning">
+    <strong>⚠️ 有 {{ reminders|length }} 个flags需要检查进度！</strong>
+    <p>这些flags已经超过30天未更新，建议尽快检查进度。</p>
+</div>
+
+<div class="reminder-list">
+    {% for flag in reminders %}
+    <div class="reminder-card">
+        <div class="reminder-header">
+            <h3>{{ flag.title }}</h3>
+            <span class="flag-status status-{{ flag.status }}">{{ flag.status }}</span>
+        </div>
+        
+        <p class="flag-description">{{ flag.description }}</p>
+        
+        <div class="flag-progress">
+            <div class="progress-bar-container small">
+                <div class="progress-bar" style="width: {{ flag.progress }}%">
+                    <span class="progress-text">{{ flag.progress }}%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flag-meta">
+            <span>📅 目标日期: {{ flag.target_date }}</span>
+            <span>🏷️ 分类: {{ flag.category }}</span>
+            <span>🎯 可行性: {{ flag.feasibility_score }}/100</span>
+        </div>
+        
+        {% if flag.check_history %}
+        <div class="last-check">
+            <strong>上次检查:</strong> {{ flag.check_history[-1].date }}
+        </div>
+        {% endif %}
+        
+        <div class="reminder-actions">
+            <a href="/flag/{{ flag.id[:8] }}" class="btn btn-primary">查看详情</a>
+            <button onclick="showUpdateModal('{{ flag.id[:8] }}', {{ flag.progress }})" class="btn btn-secondary">更新进度</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-success">
+    <strong>✅ 太棒了！</strong>
+    <p>目前没有需要检查的flags，继续保持！</p>
+</div>
+{% endif %}
+
+<div class="tips-section">
+    <h2>💡 定期检查的重要性</h2>
+    <div class="tips-grid">
+        <div class="tip-card">
+            <h3>📈 跟踪进度</h3>
+            <p>定期检查可以帮助你了解目标的完成情况，及时调整策略</p>
+        </div>
+        <div class="tip-card">
+            <h3>🎯 保持动力</h3>
+            <p>看到进度增长会给你带来成就感和继续前进的动力</p>
+        </div>
+        <div class="tip-card">
+            <h3>⚡ 及时调整</h3>
+            <p>发现问题时及时调整目标或方法，避免浪费时间</p>
+        </div>
+        <div class="tip-card">
+            <h3>📊 积累经验</h3>
+            <p>记录每次检查的备注，积累宝贵的经验教训</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="updateModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeUpdateModal()">&times;</span>
+        <h2>更新进度</h2>
+        <form id="updateForm" onsubmit="submitUpdate(event)">
+            <input type="hidden" id="updateFlagId">
+            <div class="form-group">
+                <label>进度 (0-100):</label>
+                <input type="range" id="updateProgress" min="0" max="100" value="0" oninput="updateProgressLabel()">
+                <span id="progressLabel">0%</span>
+            </div>
+            <div class="form-group">
+                <label>备注:</label>
+                <textarea id="updateNotes" rows="3" placeholder="输入备注信息..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">更新</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showUpdateModal(flagId, currentProgress) {
+    document.getElementById('updateFlagId').value = flagId;
+    document.getElementById('updateProgress').value = currentProgress;
+    document.getElementById('progressLabel').textContent = currentProgress + '%';
+    document.getElementById('updateModal').style.display = 'block';
+}
+
+function closeUpdateModal() {
+    document.getElementById('updateModal').style.display = 'none';
+}
+
+function updateProgressLabel() {
+    const progress = document.getElementById('updateProgress').value;
+    document.getElementById('progressLabel').textContent = progress + '%';
+}
+
+function submitUpdate(event) {
+    event.preventDefault();
+    
+    const flagId = document.getElementById('updateFlagId').value;
+    const progress = document.getElementById('updateProgress').value;
+    const notes = document.getElementById('updateNotes').value;
+    
+    fetch(`/update/${flagId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `progress=${progress}&notes=${encodeURIComponent(notes)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('进度更新成功！');
+            closeUpdateModal();
+            location.reload();
+        } else {
+            alert('更新失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('更新失败：' + error);
+    });
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('updateModal');
+    if (event.target == modal) {
+        closeUpdateModal();
+    }
+}
+</script>
+{% endblock %}

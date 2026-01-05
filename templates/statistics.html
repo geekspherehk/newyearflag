@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📊 统计信息</h1>
+    <a href="/" class="btn btn-secondary">返回首页</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">总Flag数</div>
+    </div>
+    <div class="stat-card completed">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-label">已完成</div>
+    </div>
+    <div class="stat-card in-progress">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-value">{{ stats.in_progress }}</div>
+        <div class="stat-label">进行中</div>
+    </div>
+    <div class="stat-card not-started">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ stats.not_started }}</div>
+        <div class="stat-label">未开始</div>
+    </div>
+</div>
+
+<div class="progress-section">
+    <h2>📈 总体完成率</h2>
+    <div class="progress-bar-container large">
+        <div class="progress-bar" style="width: {{ stats.completion_rate }}%">
+            <span class="progress-text">{{ "%.1f"|format(stats.completion_rate) }}%</span>
+        </div>
+    </div>
+    {% if stats.completion_rate < 30 %}
+    <p class="progress-warning">⚠️ 完成率较低，建议重新审视目标的可行性</p>
+    {% elif stats.completion_rate > 80 %}
+    <p class="progress-success">🌟 太棒了！你的目标完成率很高！</p>
+    {% endif %}
+</div>
+
+<div class="info-grid">
+    <div class="info-card">
+        <h3>🎯 平均可行性评分</h3>
+        <p class="info-value large">{{ "%.1f"|format(stats.avg_feasibility) }}/100</p>
+        <p class="info-description">
+            {% if stats.avg_feasibility >= 80 %}
+                目标设定非常合理！
+            {% elif stats.avg_feasibility >= 60 %}
+                目标设定基本合理，可以继续优化
+            {% else %}
+                建议重新审视目标设定的合理性
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% if category_stats %}
+<div class="category-stats">
+    <h2>📋 分类统计</h2>
+    <div class="category-grid">
+        {% for category, data in category_stats.items() %}
+        <div class="category-card">
+            <h3>{{ category }}</h3>
+            <div class="category-stats-detail">
+                <div class="category-stat">
+                    <span class="category-label">总数:</span>
+                    <span class="category-value">{{ data.total }}</span>
+                </div>
+                <div class="category-stat">
+                    <span class="category-label">已完成:</span>
+                    <span class="category-value">{{ data.completed }}</span>
+                </div>
+                <div class="category-stat">
+                    <span class="category-label">完成率:</span>
+                    <span class="category-value">
+                        {% if data.total > 0 %}
+                            {{ "%.1f"|format((data.completed / data.total * 100)) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="category-progress">
+                <div class="progress-bar-container small">
+                    <div class="progress-bar" style="width: {% if data.total > 0 %}{{ (data.completed / data.total * 100) }}{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="tips-section">
+    <h2>💡 提高完成率的建议</h2>
+    <div class="tips-grid">
+        <div class="tip-card">
+            <h3>🎯 设定合理目标</h3>
+            <p>参考可行性评估结果，设定既有挑战性又可实现的目标</p>
+        </div>
+        <div class="tip-card">
+            <h3>📅 定期检查</h3>
+            <p>每月至少更新一次进度，及时发现和解决问题</p>
+        </div>
+        <div class="tip-card">
+            <h3>📝 具体描述</h3>
+            <p>详细描述行动计划，包含具体的步骤和量化指标</p>
+        </div>
+        <div class="tip-card">
+            <h3>⚡ 及时调整</h3>
+            <p>根据实际情况及时调整目标或方法，保持灵活性</p>
+        </div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <h2>🚀 快速操作</h2>
+    <div class="action-buttons">
+        <a href="/add" class="btn btn-primary">添加新Flag</a>
+        <a href="/flags" class="btn btn-secondary">查看所有Flag</a>
+        <a href="/reminders" class="btn btn-warning">查看提醒</a>
+    </div>
+</div>
+{% endblock %}
