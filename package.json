@@ -6,7 +6,7 @@
   "scripts": {
     "build": "echo 'Build completed'",
     "android": "npx cap open android",
-    "sync": "npx cap sync"
+    "sync": "npx cap sync android"
   },
   "keywords": [
     "flag",

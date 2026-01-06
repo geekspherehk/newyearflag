@@ -30,9 +30,13 @@ jobs:
       run: |
         npm install
 
+    - name: Make node_modules executable
+      run: |
+        chmod -R +x node_modules/.bin/
+
     - name: Sync Capacitor
       run: |
-        npx cap sync android
+        npm run sync
 
     - name: Build Debug APK
       run: |
