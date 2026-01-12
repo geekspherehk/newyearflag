@@ -12,16 +12,12 @@ class App {
     }
 
     setupNavigation() {
-        document.querySelectorAll('[data-page]').forEach(element => {
-            element.addEventListener('click', (e) => {
+        document.querySelectorAll('.tab-item').forEach(item => {
+            item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = element.getAttribute('data-page');
+                const page = item.getAttribute('data-page');
                 this.loadPage(page);
             });
-        });
-
-        document.getElementById('navToggle').addEventListener('click', () => {
-            document.getElementById('navMenu').classList.toggle('active');
         });
     }
 
@@ -43,17 +39,46 @@ class App {
             this.handleSearch(e.target.value);
         });
 
-        document.getElementById('view-reminders-btn').addEventListener('click', () => {
-            this.loadPage('reminders');
+        document.querySelector('.modal-close').addEventListener('click', () => {
+            document.getElementById('modal').classList.remove('show');
         });
 
-        document.querySelector('.modal-close').addEventListener('click', () => {
-            document.getElementById('modal').style.display = 'none';
+        document.querySelector('.log-modal-close').addEventListener('click', () => {
+            document.getElementById('log-modal').classList.remove('show');
+        });
+
+        document.getElementById('add-log-btn').addEventListener('click', () => {
+            this.addLog();
+        });
+
+        document.querySelector('.progress-modal-close').addEventListener('click', () => {
+            document.getElementById('progress-modal').classList.remove('show');
+        });
+
+        document.getElementById('update-progress-btn').addEventListener('click', () => {
+            this.updateProgress();
+        });
+
+        const progressSlider = document.getElementById('progress-slider');
+        const progressInput = document.getElementById('progress-input');
+
+        progressSlider.addEventListener('input', (e) => {
+            progressInput.value = e.target.value;
+        });
+
+        progressInput.addEventListener('input', (e) => {
+            progressSlider.value = e.target.value;
         });
 
         window.addEventListener('click', (e) => {
             if (e.target === document.getElementById('modal')) {
-                document.getElementById('modal').style.display = 'none';
+                document.getElementById('modal').classList.remove('show');
+            }
+            if (e.target === document.getElementById('log-modal')) {
+                document.getElementById('log-modal').classList.remove('show');
+            }
+            if (e.target === document.getElementById('progress-modal')) {
+                document.getElementById('progress-modal').classList.remove('show');
             }
         });
     }
@@ -62,8 +87,8 @@ class App {
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
         });
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
+        document.querySelectorAll('.tab-item').forEach(item => {
+            item.classList.remove('active');
         });
 
         const targetPage = document.getElementById(`page-${pageName}`);
@@ -71,14 +96,23 @@ class App {
             targetPage.classList.add('active');
         }
 
-        const activeLink = document.querySelector(`[data-page="${pageName}"]`);
-        if (activeLink && activeLink.classList.contains('nav-link')) {
-            activeLink.classList.add('active');
+        const activeTab = document.querySelector(`.tab-item[data-page="${pageName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
         }
 
-        document.getElementById('navMenu').classList.remove('active');
-
         this.currentPage = pageName;
+
+        const pageTitle = document.getElementById('page-title');
+        const pageTitles = {
+            'home': '🎯 Flag管理',
+            'flags': '📋 Flag列表',
+            'add': '➕ 添加Flag',
+            'statistics': '📊 统计'
+        };
+        if (pageTitle) {
+            pageTitle.textContent = pageTitles[pageName] || 'Flag管理';
+        }
 
         switch (pageName) {
             case 'home':
@@ -90,9 +124,6 @@ class App {
             case 'add':
                 this.loadAddPage();
                 break;
-            case 'reminders':
-                this.loadReminders();
-                break;
             case 'statistics':
                 this.loadStatistics();
                 break;
@@ -102,275 +133,321 @@ class App {
     loadHomePage() {
         const stats = this.flagManager.getStatistics();
         const flags = this.flagManager.listFlags().slice(0, 5);
-        const reminders = this.flagManager.getMonthlyReminders();
 
         document.getElementById('stat-total').textContent = stats.total;
         document.getElementById('stat-completed').textContent = stats.completed;
         document.getElementById('stat-in-progress').textContent = stats.in_progress;
-        document.getElementById('stat-not-started').textContent = stats.not_started;
 
         document.getElementById('completion-bar').style.width = `${stats.completion_rate}%`;
         document.getElementById('completion-text').textContent = `${stats.completion_rate}%`;
 
-        document.getElementById('avg-feasibility').textContent = `${stats.avg_feasibility}/100`;
-        document.getElementById('reminder-count').textContent = `${reminders.length} 个`;
-
-        const viewRemindersBtn = document.getElementById('view-reminders-btn');
-        if (reminders.length > 0) {
-            viewRemindersBtn.style.display = 'inline-block';
-        } else {
-            viewRemindersBtn.style.display = 'none';
-        }
-
         const recentFlagsContainer = document.getElementById('recent-flags');
-        recentFlagsContainer.innerHTML = flags.map(flag => this.createFlagCard(flag)).join('');
+        recentFlagsContainer.innerHTML = '';
+
+        if (flags.length === 0) {
+            recentFlagsContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>还没有Flag，快去添加一个吧！</p>
+                </div>
+            `;
+        } else {
+            flags.forEach(flag => {
+                const flagElement = this.createFlagElement(flag);
+                recentFlagsContainer.appendChild(flagElement);
+            });
+        }
     }
 
     loadFlags() {
+        const flags = this.flagManager.listFlags();
         const statusFilter = document.getElementById('filter-status').value;
         const categoryFilter = document.getElementById('filter-category').value;
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-        const flags = this.flagManager.listFlags(
-            categoryFilter || null,
-            statusFilter || null
-        );
+        let filteredFlags = flags.filter(flag => {
+            if (statusFilter && flag.status !== statusFilter) return false;
+            if (categoryFilter && flag.category !== categoryFilter) return false;
+            if (searchTerm && 
+                !flag.title.toLowerCase().includes(searchTerm) &&
+                !flag.goal.toLowerCase().includes(searchTerm) &&
+                !flag.task.toLowerCase().includes(searchTerm)) return false;
+            return true;
+        });
 
-        const categories = this.flagManager.getCategories();
-        const categorySelect = document.getElementById('filter-category');
-        categorySelect.innerHTML = '<option value="">所有分类</option>' +
-            categories.map(cat => `<option value="${cat}" ${cat === categoryFilter ? 'selected' : ''}>${cat}</option>`).join('');
+        const flagsContainer = document.getElementById('all-flags');
+        flagsContainer.innerHTML = '';
 
-        const allFlagsContainer = document.getElementById('all-flags');
-        allFlagsContainer.innerHTML = flags.map(flag => this.createFlagCard(flag)).join('');
+        if (filteredFlags.length === 0) {
+            flagsContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>没有找到Flag</p>
+                </div>
+            `;
+        } else {
+            filteredFlags.forEach(flag => {
+                const flagElement = this.createFlagElement(flag);
+                flagsContainer.appendChild(flagElement);
+            });
+        }
     }
 
     loadAddPage() {
         document.getElementById('add-flag-form').reset();
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('target_date').min = today;
-    }
-
-    loadReminders() {
-        const reminders = this.flagManager.getMonthlyReminders();
-        const reminderFlagsContainer = document.getElementById('reminder-flags');
-
-        if (reminders.length === 0) {
-            reminderFlagsContainer.innerHTML = '<div class="empty-state"><p>🎉 太棒了！没有需要检查的Flag</p></div>';
-        } else {
-            reminderFlagsContainer.innerHTML = reminders.map(flag => this.createFlagCard(flag)).join('');
-        }
     }
 
     loadStatistics() {
         const stats = this.flagManager.getStatistics();
-        const flags = this.flagManager.listFlags();
 
-        document.getElementById('stats-total').textContent = stats.total;
-        document.getElementById('stats-completed').textContent = stats.completed;
-        document.getElementById('stats-in-progress').textContent = stats.in_progress;
-        document.getElementById('stats-not-started').textContent = stats.not_started;
-
-        document.getElementById('stats-completion-bar').style.width = `${stats.completion_rate}%`;
-        document.getElementById('stats-completion-text').textContent = `${stats.completion_rate}%`;
-
-        document.getElementById('stats-avg-feasibility').textContent = `${stats.avg_feasibility}/100`;
-
-        const categoryStats = {};
-        flags.forEach(flag => {
-            const category = flag.category;
-            if (!categoryStats[category]) {
-                categoryStats[category] = { total: 0, completed: 0 };
-            }
-            categoryStats[category].total++;
-            if (flag.status === '已完成') {
-                categoryStats[category].completed++;
-            }
-        });
-
-        const categoryStatsContainer = document.getElementById('category-stats-list');
-        categoryStatsContainer.innerHTML = Object.entries(categoryStats)
-            .map(([category, data]) => `
-                <div class="category-stat-card">
-                    <h4>📁 ${category}</h4>
-                    <div class="stat-row">
-                        <span>总计: ${data.total}</span>
-                        <span>已完成: ${data.completed}</span>
-                        <span>完成率: ${Math.round((data.completed / data.total) * 100)}%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: ${(data.completed / data.total) * 100}%"></div>
-                    </div>
-                </div>
-            `).join('');
+        document.getElementById('stat-completion-rate').textContent = `${stats.completion_rate}%`;
+        document.getElementById('stat-total-flags').textContent = stats.total;
     }
 
     handleAddFlag() {
-        const title = document.getElementById('title').value.trim();
-        const description = document.getElementById('description').value.trim();
-        const targetDate = document.getElementById('target_date').value;
-        const category = document.getElementById('category').value.trim() || '其他';
+        const name = document.getElementById('flag-name').value.trim();
+        const category = document.getElementById('flag-category').value;
+        const goal = document.getElementById('flag-goal').value.trim();
+        const task = document.getElementById('flag-task').value.trim();
+        const description = document.getElementById('flag-description').value.trim();
+        const frequency = document.getElementById('flag-frequency').value;
 
-        if (!title || !description || !targetDate) {
+        if (!name || !category || !goal || !task || !frequency) {
+            this.shakeElement(document.getElementById('add-flag-form'));
             alert('请填写所有必填字段');
             return;
         }
 
-        const flag = this.flagManager.addFlag(title, description, targetDate, category);
+        const flag = this.flagManager.addFlag({
+            name,
+            category,
+            goal,
+            task,
+            description,
+            frequency
+        });
 
         if (flag) {
-            alert('Flag添加成功！');
-            this.loadPage('flags');
+            this.showSuccessToast('Flag添加成功！');
+            this.loadPage('home');
+        } else {
+            this.shakeElement(document.getElementById('add-flag-form'));
+            alert('添加失败，请重试');
+        }
+    }
+
+    shakeElement(element) {
+        element.style.animation = 'shake 0.5s ease';
+        setTimeout(() => {
+            element.style.animation = '';
+        }, 500);
+    }
+
+    showSuccessToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-success';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 2000);
+    }
+
+    handleSearch(searchTerm) {
+        this.loadFlags();
+    }
+
+    createFlagElement(flag) {
+        const element = document.createElement('div');
+        element.className = 'flag-item';
+        element.innerHTML = `
+            <div class="flag-header">
+                <span class="flag-title">${flag.title}</span>
+                <span class="flag-status ${this.getStatusClass(flag.status)}">${flag.status}</span>
+            </div>
+            <span class="flag-category">${flag.category}</span>
+            <div class="flag-goal">🎯 ${flag.goal || '暂无目标'}</div>
+            <div class="flag-task">📋 ${flag.task || '暂无任务'}</div>
+            ${flag.description ? `<div class="flag-description">${flag.description}</div>` : ''}
+            <div class="flag-progress-container">
+                <div class="flag-progress-bar">
+                    <div class="flag-progress-fill" style="width: ${flag.progress}%"></div>
+                </div>
+                <span class="flag-progress-text">${flag.progress}%</span>
+            </div>
+            <div class="flag-footer">
+                <span>${flag.frequency}</span>
+            </div>
+            <div class="flag-actions">
+                <button class="btn btn-success btn-sm" onclick="app.completeFlag('${flag.id}')">完成</button>
+                <button class="btn btn-primary btn-sm" onclick="app.showProgressModal('${flag.id}')">更新进度</button>
+                <button class="btn btn-info btn-sm" onclick="app.showLogs('${flag.id}')">日志</button>
+                <button class="btn btn-danger btn-sm" onclick="app.deleteFlag('${flag.id}')">删除</button>
+            </div>
+        `;
+        return element;
+    }
+
+    getStatusClass(status) {
+        switch (status) {
+            case '已完成':
+                return 'completed';
+            case '进行中':
+                return 'in-progress';
+            case '未开始':
+                return 'not-started';
+            default:
+                return '';
+        }
+    }
+
+    completeFlag(id) {
+        if (confirm('确定要完成这个Flag吗？')) {
+            this.flagManager.updateFlagStatus(id, '已完成');
+            this.showSuccessToast('Flag已完成！');
+            this.loadPage(this.currentPage);
+        }
+    }
+
+    showLogs(flagId) {
+        const flag = this.flagManager.getFlag(flagId);
+        if (!flag) return;
+
+        document.getElementById('log-modal-title').textContent = `${flag.title} - 日志`;
+        document.getElementById('log-modal').classList.add('show');
+        document.getElementById('log-content').value = '';
+        this.currentFlagId = flagId;
+        this.loadLogs(flagId);
+    }
+
+    loadLogs(flagId) {
+        const logs = this.flagManager.getLogs(flagId);
+        const logList = document.getElementById('log-list');
+        logList.innerHTML = '';
+
+        if (logs.length === 0) {
+            logList.innerHTML = '<div class="no-logs">暂无日志记录</div>';
+            return;
+        }
+
+        logs.forEach(log => {
+            const logElement = document.createElement('div');
+            logElement.className = 'log-item';
+            logElement.innerHTML = `
+                <div class="log-header">
+                    <span class="log-time">${log.timestamp}</span>
+                    <button class="log-delete-btn" onclick="app.deleteLog('${flagId}', '${log.id}')">删除</button>
+                </div>
+                <div class="log-content">${log.content}</div>
+            `;
+            logList.appendChild(logElement);
+        });
+    }
+
+    addLog() {
+        const content = document.getElementById('log-content').value.trim();
+        if (!content) {
+            alert('请输入日志内容');
+            return;
+        }
+
+        const log = this.flagManager.addLog(this.currentFlagId, content);
+        if (log) {
+            document.getElementById('log-content').value = '';
+            this.loadLogs(this.currentFlagId);
+            this.showSuccessToast('日志添加成功！');
         } else {
             alert('添加失败，请重试');
         }
     }
 
-    handleSearch(query) {
-        if (!query) {
-            this.loadFlags();
+    deleteLog(flagId, logId) {
+        if (confirm('确定要删除这条日志吗？')) {
+            const success = this.flagManager.deleteLog(flagId, logId);
+            if (success) {
+                this.loadLogs(flagId);
+                this.showSuccessToast('日志已删除');
+            }
+        }
+    }
+
+    showProgressModal(flagId) {
+        const flag = this.flagManager.getFlag(flagId);
+        if (!flag) return;
+
+        document.getElementById('progress-modal-title').textContent = `${flag.title} - 更新进度`;
+        document.getElementById('current-progress').textContent = `${flag.progress}%`;
+        document.getElementById('progress-slider').value = flag.progress;
+        document.getElementById('progress-input').value = flag.progress;
+        document.getElementById('progress-notes').value = '';
+        document.getElementById('progress-modal').classList.add('show');
+        this.currentFlagId = flagId;
+        this.loadProgressHistory(flagId);
+    }
+
+    loadProgressHistory(flagId) {
+        const flag = this.flagManager.getFlag(flagId);
+        if (!flag) return;
+
+        const historyList = document.getElementById('progress-history-list');
+        historyList.innerHTML = '';
+
+        if (!flag.check_history || flag.check_history.length === 0) {
+            historyList.innerHTML = '<div class="no-progress-history">暂无进度历史</div>';
             return;
         }
 
-        const results = this.flagManager.search(query);
-        const allFlagsContainer = document.getElementById('all-flags');
-        allFlagsContainer.innerHTML = results.map(flag => this.createFlagCard(flag)).join('');
-    }
-
-    showFlagDetail(flagId) {
-        const flag = this.flagManager.listFlags().find(f => f.id === flagId);
-        if (!flag) return;
-
-        const detailContent = document.getElementById('flag-detail-content');
-        detailContent.innerHTML = `
-            <div class="flag-detail-card">
-                <div class="flag-header">
-                    <h1>${flag.title}</h1>
-                    <span class="flag-status status-${flag.status}">${flag.status}</span>
+        const sortedHistory = [...flag.check_history].reverse();
+        sortedHistory.forEach((record, index) => {
+            const historyElement = document.createElement('div');
+            historyElement.className = 'progress-history-item';
+            historyElement.innerHTML = `
+                <div class="progress-history-header">
+                    <span class="progress-history-date">${record.date}</span>
+                    <span class="progress-history-progress">${record.progress}%</span>
                 </div>
-
-                <div class="flag-meta">
-                    <span>📅 目标日期: ${flag.target_date}</span>
-                    <span>📁 分类: ${flag.category}</span>
-                    <span>🎯 可行性: ${flag.feasibility_score}/100</span>
-                </div>
-
-                <div class="flag-section">
-                    <h3>📝 描述</h3>
-                    <p>${flag.description}</p>
-                </div>
-
-                <div class="flag-section">
-                    <h3>📊 进度</h3>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: ${flag.progress}%">
-                            <span class="progress-text">${flag.progress}%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flag-section">
-                    <h3>🎯 可行性评估</h3>
-                    <p>${flag.feasibility_reason}</p>
-                </div>
-
-                <div class="flag-section">
-                    <h3>📋 检查历史</h3>
-                    ${flag.check_history.length > 0 ? `
-                        <div class="check-history">
-                            ${flag.check_history.map(record => `
-                                <div class="check-record">
-                                    <div class="record-date">${record.date}</div>
-                                    <div class="record-progress">进度: ${record.progress}%</div>
-                                    ${record.notes ? `<div class="record-notes">${record.notes}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p>暂无检查记录</p>'}
-                </div>
-
-                <div class="flag-actions">
-                    <button class="btn btn-primary" onclick="app.showUpdateModal('${flag.id}')">更新进度</button>
-                    <button class="btn btn-danger" onclick="app.deleteFlag('${flag.id}')">删除Flag</button>
-                </div>
-            </div>
-        `;
-
-        this.loadPage('flag-detail');
-    }
-
-    showUpdateModal(flagId) {
-        const flag = this.flagManager.listFlags().find(f => f.id === flagId);
-        if (!flag) return;
-
-        const modalBody = document.getElementById('modal-body');
-        modalBody.innerHTML = `
-            <h2>更新进度 - ${flag.title}</h2>
-            <form id="update-progress-form">
-                <div class="form-group">
-                    <label for="progress">进度 (%)</label>
-                    <input type="number" id="progress" name="progress" min="0" max="100" value="${flag.progress}" required>
-                </div>
-                <div class="form-group">
-                    <label for="notes">备注</label>
-                    <textarea id="notes" name="notes" rows="3" placeholder="记录本次更新的具体情况..."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">更新</button>
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal').style.display='none'">取消</button>
-                </div>
-            </form>
-        `;
-
-        document.getElementById('modal').style.display = 'block';
-
-        document.getElementById('update-progress-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const progress = parseInt(document.getElementById('progress').value);
-            const notes = document.getElementById('notes').value.trim();
-
-            if (this.flagManager.updateProgress(flagId, progress, notes)) {
-                alert('进度更新成功！');
-                document.getElementById('modal').style.display = 'none';
-                this.showFlagDetail(flagId);
-            } else {
-                alert('更新失败，请重试');
-            }
+                ${record.notes ? `<div class="progress-history-notes">${record.notes}</div>` : ''}
+            `;
+            historyList.appendChild(historyElement);
         });
     }
 
-    deleteFlag(flagId) {
-        if (!confirm('确定要删除这个Flag吗？')) return;
+    updateProgress() {
+        const progress = parseInt(document.getElementById('progress-input').value);
+        const notes = document.getElementById('progress-notes').value.trim();
 
-        if (this.flagManager.deleteFlag(flagId)) {
-            alert('Flag删除成功！');
-            this.loadPage('flags');
+        if (isNaN(progress) || progress < 0 || progress > 100) {
+            alert('请输入0-100之间的进度值');
+            return;
+        }
+
+        const success = this.flagManager.updateProgress(this.currentFlagId, progress, notes);
+        if (success) {
+            document.getElementById('progress-modal').classList.remove('show');
+            this.showSuccessToast('进度更新成功！');
+            this.loadPage(this.currentPage);
         } else {
-            alert('删除失败，请重试');
+            alert('更新失败，请重试');
         }
     }
 
-    createFlagCard(flag) {
-        const statusClass = flag.status === '已完成' ? 'completed' :
-                           flag.status === '进行中' ? 'in-progress' : 'not-started';
-
-        return `
-            <div class="flag-card">
-                <div class="flag-header">
-                    <h3>${flag.title}</h3>
-                    <span class="flag-status status-${statusClass}">${flag.status}</span>
-                </div>
-                <p class="flag-description">${flag.description.substring(0, 100)}${flag.description.length > 100 ? '...' : ''}</p>
-                <div class="flag-meta">
-                    <span>📅 ${flag.target_date}</span>
-                    <span>📊 ${flag.progress}%</span>
-                    <span>🎯 ${flag.feasibility_score}/100</span>
-                </div>
-                <div class="flag-actions">
-                    <button class="btn btn-sm btn-outline" onclick="app.showFlagDetail('${flag.id}')">查看详情</button>
-                </div>
-            </div>
-        `;
+    deleteFlag(id) {
+        if (confirm('确定要删除这个Flag吗？')) {
+            this.flagManager.deleteFlag(id);
+            this.showSuccessToast('Flag已删除');
+            this.loadPage(this.currentPage);
+        }
     }
 }
 
-const app = new App();
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new App();
+});

@@ -2,212 +2,146 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>年度Flag管理工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flag管理</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="#" class="nav-logo" data-page="home">🎯 Flag管理</a>
-            <button class="nav-toggle" id="navToggle">☰</button>
-            <ul class="nav-menu" id="navMenu">
-                <li><a href="#" data-page="home" class="nav-link active">首页</a></li>
-                <li><a href="#" data-page="flags" class="nav-link">Flag列表</a></li>
-                <li><a href="#" data-page="add" class="nav-link">添加Flag</a></li>
-                <li><a href="#" data-page="reminders" class="nav-link">提醒</a></li>
-                <li><a href="#" data-page="statistics" class="nav-link">统计</a></li>
-            </ul>
-        </div>
-    </nav>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 id="page-title">🎯 Flag管理</h1>
+        </header>
 
-    <main class="main-content">
-        <div id="page-home" class="page active">
-            <div class="hero">
-                <h1>🎯 欢迎使用年度Flag管理工具</h1>
-                <p class="subtitle">管理你的新年目标，实现你的梦想</p>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value" id="stat-total">0</div>
-                    <div class="stat-label">总Flag数</div>
-                </div>
-                <div class="stat-card completed">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-value" id="stat-completed">0</div>
-                    <div class="stat-label">已完成</div>
-                </div>
-                <div class="stat-card in-progress">
-                    <div class="stat-icon">🔄</div>
-                    <div class="stat-value" id="stat-in-progress">0</div>
-                    <div class="stat-label">进行中</div>
-                </div>
-                <div class="stat-card not-started">
-                    <div class="stat-icon">⏳</div>
-                    <div class="stat-value" id="stat-not-started">0</div>
-                    <div class="stat-label">未开始</div>
-                </div>
-            </div>
-
-            <div class="progress-section">
-                <h2>📈 完成率</h2>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="completion-bar" style="width: 0%">
-                        <span class="progress-text" id="completion-text">0%</span>
+        <main class="app-content">
+            <div id="page-home" class="page active">
+                <div class="stats-summary">
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-total">0</span>
+                        <span class="stat-label">总Flag</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number completed" id="stat-completed">0</span>
+                        <span class="stat-label">已完成</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-in-progress">0</span>
+                        <span class="stat-label">进行中</span>
                     </div>
                 </div>
-            </div>
 
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>🎯 平均可行性评分</h3>
-                    <p class="info-value" id="avg-feasibility">0/100</p>
+                <div class="progress-card">
+                    <div class="progress-header">
+                        <span>完成率</span>
+                        <span id="completion-text">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="completion-bar" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="info-card">
-                    <h3>🔔 待检查Flag</h3>
-                    <p class="info-value" id="reminder-count">0 个</p>
-                    <button class="btn btn-warning" id="view-reminders-btn" style="display: none;">查看提醒</button>
-                </div>
-            </div>
 
-            <div class="quick-actions">
-                <h2>🚀 快速操作</h2>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" data-page="add">添加新Flag</button>
-                    <button class="btn btn-secondary" data-page="flags">查看所有Flag</button>
-                    <button class="btn btn-warning" data-page="reminders">查看提醒</button>
-                    <button class="btn btn-info" data-page="statistics">查看统计</button>
+                <div class="recent-section">
+                    <h3>最近Flag</h3>
+                    <div class="flag-list" id="recent-flags"></div>
                 </div>
             </div>
 
-            <div class="recent-flags">
-                <h2>📋 最近添加的Flag</h2>
-                <div class="flag-list" id="recent-flags"></div>
-            </div>
-        </div>
-
-        <div id="page-flags" class="page">
-            <div class="page-header">
-                <h1>📋 Flag列表</h1>
-                <div class="filters">
+            <div id="page-flags" class="page">
+                <div class="filter-bar">
                     <select id="filter-status" class="filter-select">
-                        <option value="">所有状态</option>
+                        <option value="">全部状态</option>
                         <option value="进行中">进行中</option>
                         <option value="已完成">已完成</option>
                         <option value="未开始">未开始</option>
                     </select>
                     <select id="filter-category" class="filter-select">
-                        <option value="">所有分类</option>
+                        <option value="">全部分类</option>
+                        <option value="健康">健康</option>
+                        <option value="学习">学习</option>
+                        <option value="工作">工作</option>
+                        <option value="生活">生活</option>
+                        <option value="财务">财务</option>
+                        <option value="其他">其他</option>
                     </select>
-                    <input type="text" id="search-input" class="search-input" placeholder="搜索Flag...">
                 </div>
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="搜索Flag..." class="search-input">
+                </div>
+                <div class="flag-list" id="all-flags"></div>
             </div>
-            <div class="flag-list" id="all-flags"></div>
-        </div>
 
-        <div id="page-add" class="page">
-            <div class="page-header">
-                <h1>➕ 添加新Flag</h1>
-            </div>
-            <div class="form-container">
-                <form id="add-flag-form">
+            <div id="page-add" class="page">
+                <form id="add-flag-form" class="flag-form">
                     <div class="form-group">
-                        <label for="title">标题 *</label>
-                        <input type="text" id="title" name="title" required placeholder="例如：学习Python编程">
+                        <label>Flag名称</label>
+                        <input type="text" id="flag-name" required placeholder="输入Flag名称" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label for="description">描述 *</label>
-                        <textarea id="description" name="description" required rows="5" placeholder="详细描述你的目标，包括具体的行动计划..."></textarea>
+                        <label>分类</label>
+                        <select id="flag-category" required class="form-select">
+                            <option value="">选择分类</option>
+                            <option value="健康">健康</option>
+                            <option value="学习">学习</option>
+                            <option value="工作">工作</option>
+                            <option value="生活">生活</option>
+                            <option value="财务">财务</option>
+                            <option value="其他">其他</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="target_date">目标日期 *</label>
-                        <input type="date" id="target_date" name="target_date" required>
+                        <label>总体目标</label>
+                        <textarea id="flag-goal" rows="2" required placeholder="例如：今年要读50本书" class="form-textarea"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="category">分类</label>
-                        <input type="text" id="category" name="category" placeholder="例如：学习成长" list="category-list">
-                        <datalist id="category-list">
-                            <option value="学习成长"></option>
-                            <option value="健康生活"></option>
-                            <option value="职业发展"></option>
-                            <option value="兴趣爱好"></option>
-                            <option value="消费计划"></option>
-                            <option value="其他"></option>
-                        </datalist>
+                        <label>具体任务</label>
+                        <textarea id="flag-task" rows="2" required placeholder="例如：每天读30分钟书" class="form-textarea"></textarea>
                     </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">添加Flag</button>
-                        <button type="button" class="btn btn-secondary" data-page="home">取消</button>
+                    <div class="form-group">
+                        <label>检查频率</label>
+                        <select id="flag-frequency" required class="form-select">
+                            <option value="每日">每日</option>
+                            <option value="每周">每周</option>
+                            <option value="每月">每月</option>
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <label>目标描述</label>
+                        <textarea id="flag-description" rows="3" placeholder="详细描述你的Flag（可选）" class="form-textarea"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">添加Flag</button>
                 </form>
             </div>
-        </div>
 
-        <div id="page-reminders" class="page">
-            <div class="page-header">
-                <h1>🔔 提醒</h1>
-            </div>
-            <div class="flag-list" id="reminder-flags"></div>
-        </div>
-
-        <div id="page-statistics" class="page">
-            <div class="page-header">
-                <h1>📊 统计信息</h1>
-            </div>
-            <div class="statistics-content">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-value" id="stats-total">0</div>
-                        <div class="stat-label">总Flag数</div>
-                    </div>
-                    <div class="stat-card completed">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-value" id="stats-completed">0</div>
-                        <div class="stat-label">已完成</div>
-                    </div>
-                    <div class="stat-card in-progress">
-                        <div class="stat-icon">🔄</div>
-                        <div class="stat-value" id="stats-in-progress">0</div>
-                        <div class="stat-label">进行中</div>
-                    </div>
-                    <div class="stat-card not-started">
-                        <div class="stat-icon">⏳</div>
-                        <div class="stat-value" id="stats-not-started">0</div>
-                        <div class="stat-label">未开始</div>
-                    </div>
+            <div id="page-statistics" class="page">
+                <div class="stat-card">
+                    <h3>完成率</h3>
+                    <div class="stat-value" id="stat-completion-rate">0%</div>
                 </div>
-
-                <div class="progress-section">
-                    <h2>📈 完成率</h2>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" id="stats-completion-bar" style="width: 0%">
-                            <span class="progress-text" id="stats-completion-text">0%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <h3>🎯 平均可行性评分</h3>
-                    <p class="info-value" id="stats-avg-feasibility">0/100</p>
-                </div>
-
-                <div class="category-stats">
-                    <h2>📁 分类统计</h2>
-                    <div id="category-stats-list"></div>
+                <div class="stat-card">
+                    <h3>总Flag数</h3>
+                    <div class="stat-value" id="stat-total-flags">0</div>
                 </div>
             </div>
-        </div>
+        </main>
 
-        <div id="page-flag-detail" class="page">
-            <div class="page-header">
-                <button class="btn btn-secondary" data-page="flags">← 返回列表</button>
-            </div>
-            <div class="flag-detail" id="flag-detail-content"></div>
-        </div>
-    </main>
+        <nav class="tab-bar">
+            <a href="#" class="tab-item active" data-page="home" data-icon="🏠">
+                <span class="tab-icon">🏠</span>
+                <span class="tab-label">首页</span>
+            </a>
+            <a href="#" class="tab-item" data-page="flags" data-icon="📋">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">Flag</span>
+            </a>
+            <a href="#" class="tab-item" data-page="add" data-icon="➕">
+                <span class="tab-icon">➕</span>
+                <span class="tab-label">添加</span>
+            </a>
+            <a href="#" class="tab-item" data-page="statistics" data-icon="📊">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">统计</span>
+            </a>
+        </nav>
+    </div>
 
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -216,7 +150,56 @@
         </div>
     </div>
 
-    <script src="static/js/flag-manager.js"></script>
-    <script src="static/js/app.js"></script>
+    <div id="log-modal" class="modal">
+        <div class="modal-content log-modal-content">
+            <span class="modal-close log-modal-close">&times;</span>
+            <div class="log-modal-header">
+                <h2 id="log-modal-title">Flag日志</h2>
+            </div>
+            <div class="log-modal-body">
+                <div class="log-add-form">
+                    <textarea id="log-content" rows="3" placeholder="记录你做了什么来推进这个Flag..." class="form-textarea"></textarea>
+                    <button id="add-log-btn" class="btn btn-primary btn-block">添加日志</button>
+                </div>
+                <div class="log-list" id="log-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="progress-modal" class="modal">
+        <div class="modal-content progress-modal-content">
+            <span class="modal-close progress-modal-close">&times;</span>
+            <div class="progress-modal-header">
+                <h2 id="progress-modal-title">更新进度</h2>
+            </div>
+            <div class="progress-modal-body">
+                <div class="progress-current">
+                    <span class="progress-label">当前进度：</span>
+                    <span class="progress-value" id="current-progress">0%</span>
+                </div>
+                <div class="progress-input-group">
+                    <label class="progress-input-label">更新进度 (0-100%)</label>
+                    <input type="range" id="progress-slider" min="0" max="100" value="0" class="progress-slider">
+                    <div class="progress-input-value">
+                        <input type="number" id="progress-input" min="0" max="100" value="0" class="progress-number-input">
+                        <span>%</span>
+                    </div>
+                </div>
+                <div class="progress-notes-group">
+                    <label class="progress-notes-label">备注（可选）</label>
+                    <textarea id="progress-notes" rows="3" placeholder="记录这次进度更新的原因或备注..." class="form-textarea"></textarea>
+                </div>
+                <div class="progress-history">
+                    <h3>进度历史</h3>
+                    <div class="progress-history-list" id="progress-history-list"></div>
+                </div>
+                <button id="update-progress-btn" class="btn btn-primary btn-block">更新进度</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@6.0.0/dist/capacitor.js"></script>
+    <script src="static/js/flag-manager.js?v=2"></script>
+    <script src="static/js/app.js?v=2"></script>
 </body>
 </html>
